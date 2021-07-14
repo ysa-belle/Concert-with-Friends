@@ -1,13 +1,14 @@
 import { AppBar, Button, Menu, MenuItem, Toolbar, Typography, IconButton, makeStyles } from '@material-ui/core';
 import NavigationRoundedIcon from '@material-ui/icons/NavigationRounded';
 import AccountCircleRoundedIcon from '@material-ui/icons/AccountCircleRounded';
-import { useState } from 'react';
 import { COLORS } from '../constants/Colors';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 
 import { userActions }  from '../actions/user.actions';
+import Geocoder from 'react-native-geocoding';
+ 
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -35,6 +36,60 @@ export default function Navbar(props) {
   const loggedIn = useSelector(state => state.user.loggedIn);
   const dispatch = useDispatch();
 
+  const [currentLoc, setCurrentLoc] = React.useState({
+    lat: 0,
+    lng: 0
+  });
+  const[currentCity,setCurrentCity]= useState([])
+
+    const getCurrentLongLat = () => {
+      return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+      });
+    }
+
+  
+    const getCurrentCity = async () => {
+      
+      Geocoder.init("AIzaSyDaB9iZHEtafiTwgos1qZF0S6iKuW4UpIo");
+  
+      try {
+        const position = await getCurrentLongLat();
+        const currentLoc = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }
+        console.log({currentLoc});
+        const json = await Geocoder.from(currentLoc)
+        let currentCity = json.results[0].address_components[3].long_name
+        setCurrentLoc(currentLoc);
+        setCurrentCity(currentCity);
+        return currentCity;
+        
+      } catch (error) {
+        console.warn(error)
+        return null;
+      }
+    
+    }
+
+    useEffect (() => {
+    getCurrentCity();
+  }, []) 
+
+
+// useEffect (() => {
+//   Geocoder.init("AIzaSyDaB9iZHEtafiTwgos1qZF0S6iKuW4UpIo");
+
+// Geocoder.from(currentLoc)
+// .then(json => {
+// //var addressComponent = json.results[0].address_components[3].long_name;
+//   setCurrentCity(json.results[0].address_components[3].long_name)
+// })
+// .catch(error => console.warn(error));
+
+// }, []) 
+
   const handleClickMenu = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -61,7 +116,7 @@ export default function Navbar(props) {
         <Toolbar>
           <Button edge="start" className={classes.menuButton} color={COLORS.highlight} aria-label="navigation">
             <NavigationRoundedIcon />
-            <a className={classes.location} style={{ color: COLORS.black }}>Vancouver</a>
+            <a className={classes.location} style={{ color: COLORS.black }}>{currentCity}</a>
           </Button>
           <Typography variant="h1" className={classes.title}>
             Concert w/ Friends
